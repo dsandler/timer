@@ -1,0 +1,194 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timer</title>
+    <style>
+        body {
+            text-align: center;
+            background: #f0f0f0;
+        }
+
+        #controls {
+            margin-top: 40px;
+            text-align: center;
+        }
+
+        #timer-container {
+            margin: 0 auto;
+            width: 500px;
+            height: 500px;
+        }
+
+        #time-input {
+            width: 80px;
+            padding: 8px;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="timer-container">
+        <canvas id="timer-canvas" width="500" height="500">
+        </canvas>
+    </div>
+
+    <div id="controls">
+        <input type="number" id="time-input" value="5">
+        <button id="start-stop-btn">Start</button>
+    </div>
+
+    <script>
+
+const $ = document.getElementById.bind(document);
+
+const timerCanvas = $('timer-canvas');
+const ctx = timerCanvas.getContext('2d');
+const timerContainer = $('timer-container');
+const timeInput = $('time-input');
+const startStopBtn = $('start-stop-btn');
+
+const radius = timerContainer.offsetWidth / 2;
+const centerX = timerCanvas.width / 2;
+const centerY = timerCanvas.height / 2;
+
+function onClick(event) {
+    const rect = timerCanvas.getBoundingClientRect();
+    const mouseX = event.clientX - rect.left;
+    const mouseY = event.clientY - rect.top;
+
+    // Calculate angle relative to center
+    let angle = Math.atan2(mouseY - centerY, mouseX - centerX) + Math.PI / 2;
+    if (angle < 0) angle += 2 * Math.PI; // Normalize to 0-360 degrees
+
+    // Calculate time from angle
+    const minutes = (60 * angle) / (2 * Math.PI);
+    timeRemaining = (minutes * 60); // Convert to seconds
+
+    // Update input and redraw
+    timeInput.value = Math.round(minutes);
+    initializeTimer();
+}
+
+let isDragging = false;
+
+function onMouseDown(event) {
+    isDragging = true;
+    onClick(event); // Update on initial mouse down
+}
+
+function onMouseMove(event) {
+    if (isDragging) {
+        onClick(event);
+    }
+}
+
+function onMouseUp(event) {
+    isDragging = false;
+}
+
+// Add event listeners
+timerCanvas.addEventListener('mousedown', onMouseDown);
+timerCanvas.addEventListener('mousemove', onMouseMove);
+timerCanvas.addEventListener('mouseup', onMouseUp);
+
+// Add event listener for clicks
+timerCanvas.addEventListener('click', onClick);
+
+startStopBtn.onclick = () => {
+    if (startStopBtn.textContent == 'Start') {
+        startTimer();
+    } else {
+        stopTimer();
+    }
+}
+
+timeInput.onchange = initializeTimer;
+
+let timeRemaining, intervalId;
+
+function initializeTimer() {
+    timeRemaining = timeInput.value * 60; // Convert to seconds
+    drawTimer(); 
+}
+
+function startTimer() {
+    intervalId = setInterval(() => {
+        // TODO(dsandler): actually set the time remaining to total - start + now
+        timeRemaining--;
+        drawTimer(); 
+
+        if (timeRemaining <= 0) {
+            timeRemaining = 0;
+            stopTimer();
+        }
+    }, 1000);
+    startStopBtn.textContent = 'Stop';
+}
+
+function stopTimer() {
+    clearInterval(intervalId);
+    startStopBtn.textContent = 'Start';
+}
+
+function formatTime(t) {
+  const h = ~~(t / 3600);
+  const m = ~~((t % 3600) / 60);
+  const s = ~~t % 60;
+
+  let ret = "";
+
+  if (h > 0) {
+    ret += "" + h + ":" + (m < 10 ? "0" : "");
+  }
+
+  ret += "" + m + ":" + (s < 10 ? "0" : "");
+  ret += "" + s;
+
+  return ret;
+}
+
+function drawTimer() {
+    ctx.clearRect(0, 0, timerCanvas.width, timerCanvas.height);
+
+    // Draw tick marks
+    ctx.beginPath();
+    for (let i = 0; i < 60; i++) {
+        let angle = (i / 60) * 2 * Math.PI;
+        let tickLength = (i % 5 === 0) ? 20 : 10; // Longer tick marks
+
+        let x1 = centerX + radius * Math.cos(angle);
+        let y1 = centerY + radius * Math.sin(angle);
+        let x2 = centerX + (radius - tickLength) * Math.cos(angle);
+        let y2 = centerY + (radius - tickLength) * Math.sin(angle);
+
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+    }
+    ctx.strokeStyle = '#333';
+    ctx.stroke();
+
+    // Draw countdown arc
+    if (timeRemaining > 0) {
+        ctx.beginPath();
+        let startAngle = -0.5 * Math.PI; 
+        let endAngle = startAngle + (timeRemaining / 3600.0) * 2 * Math.PI; 
+        ctx.moveTo(centerX, centerY);
+        ctx.arc(centerX, centerY, radius - 30, startAngle, endAngle); // Slightly smaller radius for the arc
+        ctx.fillStyle = 'red';
+        ctx.fill();
+    }
+
+    // Draw time display   
+    ctx.font = 'bold 30px sans-serif';
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.textAlign = 'center';
+    ctx.fillText(formatTime(timeRemaining), centerX, centerY * 1.4); 
+}
+
+initializeTimer();
+
+    </script>
+</body>
+</html>
